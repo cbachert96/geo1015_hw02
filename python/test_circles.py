@@ -36,7 +36,7 @@ def Bresenham_with_rasterio(raster, start, end):
     print(outlist)
     return outlist
 
-output_file = 'test_tas_both.tif'
+output_file = 'test_tas_both_circles.tif'
 #-- read the needed parameters from the file 'params.json' (must be in same folder)
 jparams = json.load(open('params.json'))
 # jparams = json.load(open('params2.json'))
@@ -49,8 +49,6 @@ viewpoints = []
 for i,each in enumerate(jparams['viewpoints']):
     vp = (jparams['viewpoints'][i]['xy'][0], jparams['viewpoints'][i]['xy'][1], jparams['viewpoints'][i]['height'])
     viewpoints.append(vp)
-
-print(len(viewpoints))
 
 #get distance from the view point that can be seen 
 radius_view = jparams['maxdistance']
@@ -93,11 +91,8 @@ for v in viewpoints:
 
         if dist <= (radius_view + resolution) and npvs[row , col] != 2 and dist >= (radius_view - resolution):
             npvs[row , col] = 1
-        elif npvs[row , col] != 1 and npvs[row , col] != 2 and (dist > (radius_view + resolution) or dist >= (radius_view - resolution)): 
+        elif npvs[row , col] != 1 and npvs[row , col] != 2 and (dist > (radius_view + resolution) or dist < (radius_view - resolution)): 
             npvs[row , col] = 3
-
-    print('one done')
-    npvs[vrow , vcol] = 2
 
 #-- write this to disk
 with rasterio.open(output_file, 'w', 
