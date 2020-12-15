@@ -41,28 +41,27 @@ def Bresenham_with_rasterio(raster, viewpoint, end):
 
 def slope(viewpoint, point, numpy_raster):
     point_coordinate = d.xy(point[0], point[1])
-    dx = abs(viewpoint[0] - point_coordinate[0])
+    dist = distance(viewpoint, point)
 
     # get locations of points in grid
-    vrow, vcol = d.index(v[0], v[1])
+    vrow, vcol = d.index(viewpoint[0], viewpoint[1])
     
     # get heights at points 
     height_v = numpy_raster[vrow, vcol] + viewpoint[2]
     height_p = numpy_raster[point[0], point[1]]
     # get height differnce 
     dh = abs(height_v - height_p)
-
-    return dh/dx
+    return dh/dist
 
 # REMOVE IN MY CODE
-output_file = 'test_cristo.tif'
+output_file = 'test_tas.tif'
 
 
 
 
 #-- read the needed parameters from the file 'params.json' (must be in same folder)
-# jparams = json.load(open('params.json'))
-jparams = json.load(open('params2.json'))
+jparams = json.load(open('params.json'))
+# jparams = json.load(open('params2.json'))
 
 #-- load in memory the input grid
 d = rasterio.open(jparams['input_file'])    
@@ -117,16 +116,8 @@ for v in viewpoints:
             npvs[row , col] = 3
 
         # check for circle edge outside of the raster extend
-        if row == 0 and dist <= (radius_view + 0.5 * resolution):
+        if (row == 0 or row == npi.shape[0]-1 or col == 0 or col == npi.shape[1]-1) and dist <= (radius_view + 0.5 * resolution):
             npvs[row , col] = 1
-        if row == npi.shape[0]-1 and dist <= (radius_view + 0.5 * resolution):
-            npvs[row , col] = 1
-        if col == 0 and dist <= (radius_view + 0.5 * resolution):
-            npvs[row , col] = 1
-        if col == npi.shape[1]-1 and dist <= (radius_view + 0.5 * resolution):
-            npvs[row , col] = 1
-
-
     
         # use bresenham function to find pixels in line from viewpoint to end
         if npvs[row , col] == 1: 
@@ -136,8 +127,6 @@ for v in viewpoints:
     view_dict[i] = view_pixels
     i += 1
 
-print(npi.shape[0])
-'''
 for j in range(len(viewpoints)):
     nested_line_lst = view_dict[j]
     for line in nested_line_lst:
@@ -151,7 +140,7 @@ for j in range(len(viewpoints)):
                 tan_old = tan_new
             elif tan_new < tan_old and npvs[row , col] != 2:
                 npvs[row , col] = 0
-'''
+
 #-- write this to disk
 with rasterio.open(output_file, 'w', 
                     driver='GTiff', 
