@@ -54,7 +54,7 @@ for i,each in enumerate(jparams['viewpoints']):
 radius_view = jparams['maxdistance']
 
 #get raster resolution
-resolution = d.res[0]
+resolution = d.res[1]
 
 # make list of row and column numbers 
 col_nrs = list(range(d.shape[1]))
@@ -106,3 +106,7 @@ with rasterio.open(output_file, 'w',
     dst.write(npvs.astype(rasterio.uint8), 1)
 
 print("Viewshed file written to '%s'" % output_file)
+
+
+print('res 0', d.res[0])
+print('res 1', d.res[1])

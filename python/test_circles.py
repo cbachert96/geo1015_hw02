@@ -9,31 +9,28 @@ import numpy
 import rasterio
 from rasterio import features
 
-def Bresenham_with_rasterio(raster, start, end):
-    d = raster
-    a = start
-    b = end 
+def Bresenham_with_rasterio(raster, viewpoint, end):
     v = {}
     v["type"] = "LineString"
     v["coordinates"] = []
-    v["coordinates"].append(d.xy(a[0], a[1]))
-    v["coordinates"].append(d.xy(b[0], b[1]))
+    v["coordinates"].append(raster.xy(viewpoint[0], viewpoint[1]))
+    v["coordinates"].append(raster.xy(end[0], end[1]))
     shapes = [(v, 1)]
     re = features.rasterize(shapes,
-                            out_shape=d.shape,
+                            out_shape=raster.shape,
                             all_touched=True,
-                            transform=d.transform)
+                            transform=raster.transform)
     out = numpy.argwhere(re==1)
     outlist = []
     for el in out:
         outlist.append(tuple(el))
-    if a[0]>b[0] and a[1]<=b[1]:
+    if viewpoint[0]>end[0] and viewpoint[1]<=end[1]:
         outlist = sorted(outlist, key=lambda x: (-x[0], x[1]))
-    elif a[0]>b[0] and a[1]>=b[1]:
+    elif viewpoint[0]>end[0] and viewpoint[1]>=end[1]:
         outlist = sorted(outlist, key=lambda x: (-x[0], -x[1]))
-    elif a[0]<=b[0] and a[1]>b[1]:
+    elif viewpoint[0]<=end[0] and viewpoint[1]>end[1]:
         outlist = sorted(outlist, key=lambda x: (x[0], -x[1]))
-    print(outlist)
+    print(outlist[0])
     return outlist
 
 output_file = 'test_tas_both_circles.tif'
@@ -68,9 +65,12 @@ npi  = d.read(1)
 #-- the results of the viewshed in npvs, all values=0
 npvs = numpy.zeros(d.shape, dtype=numpy.int8)
 
+# create dictionary to store lists 
+view_dict = {}
+i = 1
 # get the viewpoint from the list one by one
 for v in viewpoints:
-
+    view_pixels = []
     #-- index of this point in the numpy raster
     vrow, vcol = d.index(v[0], v[1])
     #-- put that pixel with value 2
@@ -87,13 +87,19 @@ for v in viewpoints:
         dy = coordinate[1] - v[1]
         dist = (dx**2 + dy**2)**0.5
         # check if the raster point is at a radius of the viewpoint  
-        # -----------   dist >= (radius_view - resolution) and 
-
-        if dist <= (radius_view + resolution) and npvs[row , col] != 2 and dist >= (radius_view - resolution):
+        if dist <= (radius_view + 0.5 * resolution) and npvs[row , col] != 2 and dist >= (radius_view - 0.5 * resolution):
             npvs[row , col] = 1
-        elif npvs[row , col] != 1 and npvs[row , col] != 2 and (dist > (radius_view + resolution) or dist < (radius_view - resolution)): 
+        elif npvs[row , col] != 1 and npvs[row , col] != 2 and (dist > (radius_view + 0.5 * resolution) or dist < (radius_view - 0.5 * resolution)): 
             npvs[row , col] = 3
 
+        # use bresenham function to find pixels in line from viewpoint to end
+        if npvs[row , col] == 1: 
+            view_pixels.append(Bresenham_with_rasterio(d, v, point))
+    # store list of pixels in a dictionary 
+    view_dict[i] = view_pixels
+    i += 1
+
+print()
 #-- write this to disk
 with rasterio.open(output_file, 'w', 
                     driver='GTiff', 
