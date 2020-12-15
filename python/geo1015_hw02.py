@@ -11,13 +11,13 @@ import time
 import rasterio
 
 #-- all your code goes into my_code
-import my_code_hw02
+import my_code_hw02_sample
 
 
 def main():
     
     #-- read the needed parameters from the file 'params.json' (must be in same folder)
-    jparams = json.load(open('params.json'))
+    jparams = json.load(open('params2.json'))
     # jparams = json.load(open('params2.json'))
 
     start_time = time.time()
@@ -32,7 +32,7 @@ def main():
         viewpoints.append(vp)
 
     #-- my code
-    my_code_hw02.output_viewshed(d, viewpoints, jparams['maxdistance'], jparams['output_file'])
+    my_code_hw02_sample.output_viewshed(d, viewpoints, jparams['maxdistance'], jparams['output_file'])
 
     print("--- %.3f seconds ---" % (time.time() - start_time))
 
