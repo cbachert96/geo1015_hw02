@@ -1,35 +1,78 @@
+
 import json 
 import time
 import rasterio
-from rasterio import features
-import math
+
 import sys
+import math
 import numpy
+import rasterio
+from rasterio import features
 
-
-def main():
+def Bresenham_with_rasterio(raster, viewpoint, end):
+    v = {}
+    v["type"] = "LineString"
+    v["coordinates"] = []
+    v["coordinates"].append(raster.xy(viewpoint[0], viewpoint[1]))
+    v["coordinates"].append(raster.xy(end[0], end[1]))
+    shapes = [(v, 1)]
+    re = features.rasterize(shapes,
+                            out_shape=raster.shape,
+                            all_touched=True,
+                            transform=raster.transform)
     
-    #-- read the needed parameters from the file 'params.json' (must be in same folder)
-    jparams = json.load(open('params.json'))
-    # jparams = json.load(open('params2.json'))
+    x, y = ((numpy.where(re)))
+    XY = [i for i in zip(x,y)]             # creates list of index tuples, but not in right order
 
-    #-- load in memory the input grid
-    d = rasterio.open(jparams['input_file'])    
+    line = []
 
-    #-- fetch the viewpoints
-    viewpoints = []
-    for i,each in enumerate(jparams['viewpoints']):
-        vp = (jparams['viewpoints'][i]['xy'][0], jparams['viewpoints'][i]['xy'][1], jparams['viewpoints'][i]['height'])
-        viewpoints.append(vp)
+    line.append(viewpoint)                  # append viewpoint as start point
+    ind = XY.index(viewpoint)
+    XY.pop(ind)
 
-    output_viewshed(d, viewpoints, jparams['maxdistance'], jparams['output_file'])
+    while len(XY) != 0:                     # like a walk algorythm, finds the next adjecant cell, if there is none, look for diagonals
+        up = (line[-1][0]-1, line[-1][1])
+        right = (line[-1][0] , line[-1][1]+1)
+        down = (line[-1][0]+1 , line[-1][1])
+        left = (line[-1][0] , line[-1][1]-1)
+        ur = (line[-1][0]-1, line[-1][1]+1)     # up right
+        dr = (line[-1][0]+1, line[-1][1]+1)     # down right
+        dl = (line[-1][0]+1, line[-1][1]-1)     # down left
+        ul = (line[-1][0]-1, line[-1][1]-1)     # up left
+        if up in XY:
+            line.append(up)
+            ind = XY.index(up)
+            XY.pop(ind)
+        elif right in XY:
+            line.append(right)
+            ind = XY.index(right)
+            XY.pop(ind)
+        elif down in XY:
+            line.append(down)
+            ind = XY.index(down)
+            XY.pop(ind)
+        elif left in XY:
+            line.append(left)
+            ind = XY.index(left)
+            XY.pop(ind)
+        elif ur in XY:
+            line.append(ur)
+            ind = XY.index(ur)
+            XY.pop(ind)
+        elif dr in XY:
+            line.append(dr)
+            ind = XY.index(dr)
+            XY.pop(ind)
+        elif dl in XY:
+            line.append(dl)
+            ind = XY.index(dl)
+            XY.pop(ind)
+        elif ul in XY:
+            line.append(ul)
+            ind = XY.index(ul)
+            XY.pop(ind)
+        else:
+            print('something went wrong')
+            break
 
-
-def output_viewshed(d, viewpoints, maxdistance, output_file):
-    npi  = d.read(1)
-    v = viewpoints[0]
-    vrow, vcol = d.index(v[0], v[1])
-    print(d.shape)
-
-if __name__ == '__main__':
-    main()
+    return line
