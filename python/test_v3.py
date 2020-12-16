@@ -17,7 +17,7 @@ def distance(viewpoint, point_coordinate):
 
 def slope(viewpoint, point, numpy_raster):
     point_coordinate = d.xy(point[0], point[1])
-    dist = distance(viewpoint, point)
+    dist = distance(viewpoint, point_coordinate)
 
     # get locations of points in grid
     vrow, vcol = d.index(viewpoint[0], viewpoint[1])
@@ -26,7 +26,7 @@ def slope(viewpoint, point, numpy_raster):
     height_v = numpy_raster[vrow, vcol] + viewpoint[2]
     height_p = numpy_raster[point[0], point[1]]
     # get height differnce 
-    dh = abs(height_v - height_p)
+    dh = height_p - height_v
     return dh/dist
 
 def Bresenham_with_rasterio(raster, viewpoint, end):
@@ -40,20 +40,65 @@ def Bresenham_with_rasterio(raster, viewpoint, end):
                             out_shape=raster.shape,
                             all_touched=True,
                             transform=raster.transform)
-    out = numpy.argwhere(re==1)
-    outlist = []
-    for el in out:
-        outlist.append(tuple(el))
-    if viewpoint[0]>end[0] and viewpoint[1]<=end[1]:
-        outlist = sorted(outlist, key=lambda x: (-x[0], x[1]))
-    elif viewpoint[0]>end[0] and viewpoint[1]>=end[1]:
-        outlist = sorted(outlist, key=lambda x: (-x[0], -x[1]))
-    elif viewpoint[0]<=end[0] and viewpoint[1]>end[1]:
-        outlist = sorted(outlist, key=lambda x: (x[0], -x[1]))
-    return outlist
+    
+    x, y = ((numpy.where(re)))
+    XY = [i for i in zip(x,y)]             # creates list of index tuples, but not in right order
+
+    line = []
+
+    line.append(viewpoint)                  # append viewpoint as start point
+    ind = XY.index(viewpoint)
+    XY.pop(ind)
+
+    while len(XY) != 0:                     # like a walk algorythm, finds the next adjecant cell, if there is none, look for diagonals
+        up = (line[-1][0]-1, line[-1][1])
+        right = (line[-1][0] , line[-1][1]+1)
+        down = (line[-1][0]+1 , line[-1][1])
+        left = (line[-1][0] , line[-1][1]-1)
+        ur = (line[-1][0]-1, line[-1][1]+1)     # up right
+        dr = (line[-1][0]+1, line[-1][1]+1)     # down right
+        dl = (line[-1][0]+1, line[-1][1]-1)     # down left
+        ul = (line[-1][0]-1, line[-1][1]-1)     # up left
+        if up in XY:
+            line.append(up)
+            ind = XY.index(up)
+            XY.pop(ind)
+        elif right in XY:
+            line.append(right)
+            ind = XY.index(right)
+            XY.pop(ind)
+        elif down in XY:
+            line.append(down)
+            ind = XY.index(down)
+            XY.pop(ind)
+        elif left in XY:
+            line.append(left)
+            ind = XY.index(left)
+            XY.pop(ind)
+        elif ur in XY:
+            line.append(ur)
+            ind = XY.index(ur)
+            XY.pop(ind)
+        elif dr in XY:
+            line.append(dr)
+            ind = XY.index(dr)
+            XY.pop(ind)
+        elif dl in XY:
+            line.append(dl)
+            ind = XY.index(dl)
+            XY.pop(ind)
+        elif ul in XY:
+            line.append(ul)
+            ind = XY.index(ul)
+            XY.pop(ind)
+        else:
+            print('something went wrong')
+            break
+
+    return line
 
 # REMOVE IN MY CODE
-output_file = 'test_tas.tif'
+output_file = 'test_tas1.tif'
 
 
 
@@ -79,10 +124,10 @@ resolution = d.res[0]
 
 # make list of row and column numbers 
 col_nrs = list(range(d.shape[1]))
-row_nr = list(range(d.shape[0]))
+row_nrs = list(range(d.shape[0]))
 
 # make nested list of raster points 
-raster_points = [[x, y] for y in row_nr for x in col_nrs]
+raster_points = [[x, y] for y in col_nrs for x in row_nrs]
 
 #-- numpy of input
 npi  = d.read(1)
@@ -102,79 +147,26 @@ for v in viewpoints:
 
     # loop over all the raster points 
     for point in raster_points:
-        col = point[0]
-        row = point[1]
+        col = point[1]
+        row = point[0]
         # get coordinate values for the point
         coordinate = d.xy(row, col)
         # calculate the distance between the point and the viewpoint
         dist = distance(v, coordinate)
         # check if the raster point is at a radius of the viewpoint  
         if dist <= (radius_view + 0.5 * resolution) and npvs[row , col] != 2 and dist >= (radius_view - 0.5 * resolution):
-            npvs[row , col] = 1
-        elif npvs[row , col] != 1 and npvs[row , col] != 2 and (dist > (radius_view + 0.5 * resolution) or dist < (radius_view - 0.5 * resolution)): 
+            npvs[row , col] = 5
+        elif npvs[row , col] != 5 and npvs[row , col] != 2 and (dist > (radius_view + 0.5 * resolution) or dist < (radius_view - 0.5 * resolution)): 
             npvs[row , col] = 3
 
         # check for circle edge outside of the raster extend
         if (row == 0 or row == npi.shape[0]-1 or col == 0 or col == npi.shape[1]-1) and dist <= (radius_view + 0.5 * resolution):
-            npvs[row , col] = 1
-
-        # find value of the absolute altitude of the viewpoint
-        height_vp = npi[vrow, vcol] + v[2]
+            npvs[row , col] = 5
     
         # use bresenham function to find pixels in line from viewpoint to end
-        if npvs[row , col] == 1: 
-            line = Bresenham_with_rasterio(d, (vrow, vcol), point)
-
-            # set previous height and tangent to low value 
-            prev_h = -999
-            prev_tan = -999
-            
-            # loop over points in line
-            for pixel in line[1:]:
-                # get the altitiude of the point
-                height_p = npi[pixel[0], pixel[1]]
-                pcol = point[1]
-                prow = point[0]
-
-                # if the height if higher than the precious point 
-                if height_p > prev_h:
-                    dist = distance(pixel, v)
-                    # calculate relative height difference 
-                    dh = height_p - height_vp
-                    print('prev_h1', prev_h)
-                    # if the height value of the point is higher than the previous point update prev_h
-                    if prev_h < height_p:
-                        prev_h = height_p
-                        print('prev_h updated', prev_h)
-                    # calculate the tan
-                    # if viewpoint is lower  
-                    if dh < 0:
-                        tan = numpy.arctan(dh/(dist))
-                    # if the viewpoint is higher 
-                    elif dh > 0:
-                        tan = numpy.arctan(dh/(dist)) * (-1)
-                    
-                    # if the viewpoint is at the same hight
-                    elif dh == 0:
-                        tan = 0
-
-                    # check if tangent has increased 
-                    print('tan', tan)
-                    print('prev tan', prev_tan)
-                    if tan > prev_tan and npvs[prow , pcol] != 2:
-                        print('yes')
-                        prev_tan = tan
-                        npvs[prow , pcol] == 1
-                        
-                    elif tan <= prev_tan and npvs[prow , pcol] != 2:
-                        print('no')
-                        npvs[prow , pcol] == 0
-                # if the altitude is lower than the previous point and the point is not visiple yet set the value to 0
-                elif npvs[row , col] == 3:
-                    print('not visible')
-                    npvs[row , col] = 0
-                    
-'''
+        if npvs[row , col] == 5: 
+            view_pixels.append(Bresenham_with_rasterio(d, (vrow, vcol), point))
+    
     # store list of pixels in a dictionary 
     view_dict[i] = view_pixels
     i += 1
@@ -183,16 +175,17 @@ for j in range(len(viewpoints)):
     nested_line_lst = view_dict[j]
     for line in nested_line_lst:
         tan_old = -99
-        for k in range(len(line)-1):
-            tan_new = slope(viewpoints[j], line[k+1], npi)
-            col = line[k+1][0]
-            row = line[k+1][1]
-            if tan_new >= tan_old and npvs[row , col] != 2:
+        for pixel in line[1:]:
+            tan_new = slope(viewpoints[j], pixel, npi)
+            col = pixel[1]
+            row = pixel[0]
+            if tan_new >= tan_old and npvs[row , col] != 2 and npvs[row , col] != 1:
                 npvs[row , col] = 1
                 tan_old = tan_new
-            elif tan_new < tan_old and npvs[row , col] != 2:
+            elif tan_new < tan_old and npvs[row , col] != 2 and npvs[row , col] != 1:
                 npvs[row , col] = 0
-''' 
+
+
 #-- write this to disk
 with rasterio.open(output_file, 'w', 
                     driver='GTiff', 
