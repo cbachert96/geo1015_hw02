@@ -1,9 +1,11 @@
 #-- my_code_hw02.py
 #-- Assignment 02 GEO1015.2020
-#-- [YOUR NAME] 
-#-- [YOUR STUDENT NUMBER] 
-#-- [YOUR NAME] 
-#-- [YOUR STUDENT NUMBER] 
+#-- Louise Spekking 
+#-- 4256778 
+#-- Carolin Bachert
+#-- 5382998
+#-- Maundri Prihanggo 
+#-- 5151279 
 
 import sys
 import math
@@ -29,16 +31,16 @@ def Bresenham_with_rasterio(raster, viewpoint, end):
                             all_touched=True,
                             transform=raster.transform)
     
-    x, y = ((numpy.where(re)))
-    XY = [i for i in zip(x,y)]             # creates list of index tuples, but not in right order
+    x_index, y_index = ((numpy.where(re)))
+    index_l = [i for i in zip(x_index,y_index)]             # creates list of index tuples, but not in right order
 
     line = []
 
     line.append(viewpoint)                  # append viewpoint as start point
-    ind = XY.index(viewpoint)
-    XY.pop(ind)
+    ind = index_l.index(viewpoint)               # find index in list
+    index_l.pop(ind)                             # remove item from list
 
-    while len(XY) != 0:                     # like a walk algorythm, finds the next adjecant cell, if there is none, look for diagonals
+    while len(index_l) != 0:                     # like a walk algorythm, finds the next adjecant cell, if there is none, look for diagonals
         up = (line[-1][0]-1, line[-1][1])
         right = (line[-1][0] , line[-1][1]+1)
         down = (line[-1][0]+1 , line[-1][1])
@@ -47,41 +49,38 @@ def Bresenham_with_rasterio(raster, viewpoint, end):
         dr = (line[-1][0]+1, line[-1][1]+1)     # down right
         dl = (line[-1][0]+1, line[-1][1]-1)     # down left
         ul = (line[-1][0]-1, line[-1][1]-1)     # up left
-        if up in XY:
+        if up in index_l:
             line.append(up)
-            ind = XY.index(up)
-            XY.pop(ind)
-        elif right in XY:
+            ind = index_l.index(up)
+            index_l.pop(ind)
+        elif right in index_l:
             line.append(right)
-            ind = XY.index(right)
-            XY.pop(ind)
-        elif down in XY:
+            ind = index_l.index(right)
+            index_l.pop(ind)
+        elif down in index_l:
             line.append(down)
-            ind = XY.index(down)
-            XY.pop(ind)
-        elif left in XY:
+            ind = index_l.index(down)
+            index_l.pop(ind)
+        elif left in index_l:
             line.append(left)
-            ind = XY.index(left)
-            XY.pop(ind)
-        elif ur in XY:
+            ind = index_l.index(left)
+            index_l.pop(ind)
+        elif ur in index_l:
             line.append(ur)
-            ind = XY.index(ur)
-            XY.pop(ind)
-        elif dr in XY:
+            ind = index_l.index(ur)
+            index_l.pop(ind)
+        elif dr in index_l:
             line.append(dr)
-            ind = XY.index(dr)
-            XY.pop(ind)
-        elif dl in XY:
+            ind = index_l.index(dr)
+            index_l.pop(ind)
+        elif dl in index_l:
             line.append(dl)
-            ind = XY.index(dl)
-            XY.pop(ind)
-        elif ul in XY:
+            ind = index_l.index(dl)
+            index_l.pop(ind)
+        elif ul in index_l:
             line.append(ul)
-            ind = XY.index(ul)
-            XY.pop(ind)
-        else:
-            print('something went wrong')
-            break
+            ind = index_l.index(ul)
+            index_l.pop(ind)
 
     return line
 
