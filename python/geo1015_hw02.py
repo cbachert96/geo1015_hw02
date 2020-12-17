@@ -11,7 +11,7 @@ import time
 import rasterio
 
 #-- all your code goes into my_code
-import my_code_hw02_sample
+import my_code_hw02
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
         viewpoints.append(vp)
 
     #-- my code
-    my_code_hw02_sample.output_viewshed(d, viewpoints, jparams['maxdistance'], jparams['output_file'])
+    my_code_hw02.output_viewshed(d, viewpoints, jparams['maxdistance'], jparams['output_file'])
 
     print("--- %.3f seconds ---" % (time.time() - start_time))
 
